@@ -739,7 +739,6 @@ __device__ void _ModSqr(uint64_t *rp, const uint64_t *up) {
 
 __device__ __noinline__ void _ModInvGrouped(uint64_t r[GRP_SIZE / 2 + 1][4]) 
 {
-
   uint64_t subp[GRP_SIZE / 2 + 1][4];
   uint64_t newValue[4];
   uint64_t inverse[5];
@@ -761,5 +760,4 @@ __device__ __noinline__ void _ModInvGrouped(uint64_t r[GRP_SIZE / 2 + 1][4])
   }
 
   Load256(r[0], inverse);
-
 }

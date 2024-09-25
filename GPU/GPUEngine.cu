@@ -73,7 +73,7 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 	uint64_t _s[4];
 	uint64_t _p2[4];
 
-	uint32_t   h[5];
+	uint32_t h[5];
 
 	// Load starting key
 	__syncthreads();
@@ -84,7 +84,7 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 
 	//for (uint32_t j = 0; j < STEP_SIZE / GRP_SIZE; j++) {
 
-		// Fill group with delta x
+	// Fill group with delta x
 	uint32_t i;
 	for (i = 0; i < HSIZE; i++)
 		ModSub256(dx[i], Gx[i], sx);
@@ -307,19 +307,19 @@ GPUEngine::GPUEngine(int gpuId, uint32_t maxFound) {
 	cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
 
 	if (error_id != cudaSuccess) {
-		printf("GPUEngine: CudaGetDeviceCount %s\n", cudaGetErrorString(error_id));
+		fprintf(stderr, "GPUEngine: CudaGetDeviceCount %s\n", cudaGetErrorString(error_id));
 		return;
 	}
 
 	// This function call returns 0 if there are no CUDA capable devices.
 	if (deviceCount == 0) {
-		printf("GPUEngine: There are no available device(s) that support CUDA\n");
+		fprintf(stderr, "GPUEngine: There are no available device(s) that support CUDA\n");
 		return;
 	}
 
 	err = cudaSetDevice(gpuId);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: %s\n", cudaGetErrorString(err));
 		return;
 	}
 
@@ -327,7 +327,7 @@ GPUEngine::GPUEngine(int gpuId, uint32_t maxFound) {
 	// set cpu spinwait flag to prevent 100% cpu usage
 	err = cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: %s\n", cudaGetErrorString(err));
 		return;
 	}
 
@@ -350,32 +350,32 @@ GPUEngine::GPUEngine(int gpuId, uint32_t maxFound) {
 	// Allocate memory
 	err = cudaMalloc((void**)&inputAddress, _64K * 2);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate address memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate address memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 	err = cudaHostAlloc(&inputAddressPinned, _64K * 2, cudaHostAllocWriteCombined | cudaHostAllocMapped);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate address pinned memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate address pinned memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 	err = cudaMalloc((void**)&inputKey, numThreadsGPU * 32 * 2);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate input memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate input memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 	err = cudaHostAlloc(&inputKeyPinned, numThreadsGPU * 32 * 2, cudaHostAllocWriteCombined | cudaHostAllocMapped);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate input pinned memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate input pinned memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 	err = cudaMalloc((void**)&outputAddress, outputSize);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate output memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate output memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 	err = cudaHostAlloc(&outputAddressPinned, outputSize, cudaHostAllocMapped);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate output pinned memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate output pinned memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 
@@ -409,13 +409,13 @@ void GPUEngine::PrintCudaInfo() {
 	cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
 
 	if (error_id != cudaSuccess) {
-		printf("GPUEngine: CudaGetDeviceCount %s\n", cudaGetErrorString(error_id));
+		fprintf(stderr, "GPUEngine: CudaGetDeviceCount %s\n", cudaGetErrorString(error_id));
 		return;
 	}
 
 	// This function call returns 0 if there are no CUDA capable devices.
 	if (deviceCount == 0) {
-		printf("GPUEngine: There are no available device(s) that support CUDA\n");
+		fprintf(stderr, "GPUEngine: There are no available device(s) that support CUDA\n");
 		return;
 	}
 
@@ -423,13 +423,13 @@ void GPUEngine::PrintCudaInfo() {
 
 		err = cudaSetDevice(i);
 		if (err != cudaSuccess) {
-			printf("GPUEngine: cudaSetDevice(%d) %s\n", i, cudaGetErrorString(err));
+			fprintf(stderr, "GPUEngine: cudaSetDevice(%d) %s\n", i, cudaGetErrorString(err));
 			return;
 		}
 
 		cudaDeviceProp deviceProp;
 		cudaGetDeviceProperties(&deviceProp, i);
-		printf("GPU #%d %s (%dx%d cores) (Cap %d.%d) (%.1f MB) (%s)\n",
+		fprintf(stdout, "GPU #%d %s (%dx%d cores) (Cap %d.%d) (%.1f MB) (%s)\n",
 			i, deviceProp.name, deviceProp.multiProcessorCount,
 			_ConvertSMVer2Cores(deviceProp.major, deviceProp.minor),
 			deviceProp.major, deviceProp.minor, (double)deviceProp.totalGlobalMem / 1048576.0,
@@ -474,7 +474,7 @@ void GPUEngine::SetAddress(std::vector<address_t> addresses) {
 
 	cudaError_t err = cudaGetLastError();
 	if (err != cudaSuccess) {
-		printf("GPUEngine: SetAddress: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: SetAddress: %s\n", cudaGetErrorString(err));
 	}
 }
 
@@ -492,7 +492,7 @@ void GPUEngine::SetPattern(const char* pattern) {
 
 	cudaError_t err = cudaGetLastError();
 	if (err != cudaSuccess) {
-		printf("GPUEngine: SetPattern: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: SetPattern: %s\n", cudaGetErrorString(err));
 	}
 
 	hasPattern = true;
@@ -503,12 +503,12 @@ void GPUEngine::SetAddress(std::vector<LADDRESS> addresses, uint32_t totalAddres
 	// Allocate memory for the second level of lookup tables
 	cudaError_t err = cudaMalloc((void**)&inputAddressLookUp, (_64K + totalAddress) * 4);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate address lookup memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate address lookup memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 	err = cudaHostAlloc(&inputAddressLookUpPinned, (_64K + totalAddress) * 4, cudaHostAllocWriteCombined | cudaHostAllocMapped);
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Allocate address lookup pinned memory: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Allocate address lookup pinned memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
 
@@ -525,7 +525,7 @@ void GPUEngine::SetAddress(std::vector<LADDRESS> addresses, uint32_t totalAddres
 	}
 
 	if (offset != (_64K + totalAddress)) {
-		printf("GPUEngine: Wrong totalAddress %d!=%d!\n", offset - _64K, totalAddress);
+		fprintf(stderr, "GPUEngine: Wrong totalAddress %d!=%d!\n", offset - _64K, totalAddress);
 		return;
 	}
 
@@ -542,7 +542,7 @@ void GPUEngine::SetAddress(std::vector<LADDRESS> addresses, uint32_t totalAddres
 
 	err = cudaGetLastError();
 	if (err != cudaSuccess) {
-		printf("GPUEngine: SetAddress (large): %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: SetAddress (large): %s\n", cudaGetErrorString(err));
 	}
 }
 
@@ -569,7 +569,7 @@ bool GPUEngine::callKernel() {
 		if (hasPattern) {
 			if (searchType == BECH32) {
 				// TODO
-				printf("GPUEngine: (TODO) BECH32 not yet supported with wildard\n");
+				fprintf(stderr, "GPUEngine: (TODO) BECH32 not yet supported with wildard\n");
 				return false;
 			}
 			comp_keys_pattern << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
@@ -589,7 +589,7 @@ bool GPUEngine::callKernel() {
 
 	cudaError_t err = cudaGetLastError();
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Kernel: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Kernel: %s\n", cudaGetErrorString(err));
 		return false;
 	}
 	return true;
@@ -623,7 +623,7 @@ bool GPUEngine::SetKeys(Point* p) {
 
 	cudaError_t err = cudaGetLastError();
 	if (err != cudaSuccess) {
-		printf("GPUEngine: SetKeys: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: SetKeys: %s\n", cudaGetErrorString(err));
 	}
 
 	return callKernel();
@@ -657,7 +657,7 @@ bool GPUEngine::Launch(std::vector<ITEM>& addressFound, bool spinWait) {
 
 	cudaError_t err = cudaGetLastError();
 	if (err != cudaSuccess) {
-		printf("GPUEngine: Launch: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "GPUEngine: Launch: %s\n", cudaGetErrorString(err));
 		return false;
 	}
 
@@ -666,7 +666,7 @@ bool GPUEngine::Launch(std::vector<ITEM>& addressFound, bool spinWait) {
 	if (nbFound > maxFound) {
 		// address has been lost
 		if (!lostWarning) {
-			printf("\nWarning, %d items lost\nHint: Search with less addresses, less threads (-g) or increase maxFound (-m)\n", (nbFound - maxFound));
+			fprintf(stdout, "\nWarning, %d items lost\nHint: Search with less addresses, less threads (-g) or increase maxFound (-m)\n", (nbFound - maxFound));
 			lostWarning = true;
 		}
 		nbFound = maxFound;
@@ -708,12 +708,12 @@ bool GPUEngine::CheckHash(uint8_t* h, vector<ITEM>& found, int tid, int incr, in
 	}
 	else {
 		ok = false;
-		printf("Expected item not found %s (thread=%d, incr=%d, endo=%d)\n",
+		fprintf(stdout, "Expected item not found %s (thread=%d, incr=%d, endo=%d)\n",
 			toHex(h, 20).c_str(), tid, incr, endo);
 		if (found[l].hash != NULL)
-			printf("%s\n", toHex(found[l].hash, 20).c_str());
+			fprintf(stdout, "%s\n", toHex(found[l].hash, 20).c_str());
 		else
-			printf("NULL\n");
+			fprintf(stdout, "NULL\n");
 	}
 
 	return ok;
@@ -729,7 +729,7 @@ bool GPUEngine::Check(Secp256K1* secp) {
 	if (!initialised)
 		return false;
 
-	printf("GPU: %s\n", deviceName.c_str());
+	fprintf(stdout, "GPU: %s\n", deviceName.c_str());
 
 #ifdef FULLCHECK
 
@@ -805,14 +805,14 @@ bool GPUEngine::Check(Secp256K1* secp) {
 	bool searchComp;
 
 	if (searchMode == SEARCH_BOTH) {
-		printf("Warning, Check function does not support BOTH_MODE, use either compressed or uncompressed");
+		fprintf(stdout, "Warning, Check function does not support BOTH_MODE, use either compressed or uncompressed");
 		return true;
 	}
 
 	searchComp = (searchMode == SEARCH_COMPRESSED) ? true : false;
 
 	uint32_t seed = (uint32_t)time(NULL);
-	printf("Seed: %u\n", seed);
+	fprintf(stdout, "Seed: %u\n", seed);
 	rseed(seed);
 	memset(nbOK, 0, sizeof(nbOK));
 	memset(nbFoundCPU, 0, sizeof(nbFoundCPU));
@@ -840,7 +840,7 @@ bool GPUEngine::Check(Secp256K1* secp) {
 	//  printf("[%d]: %s\n", i,toHex(found[i].hash,20).c_str());
 	//}
 
-	printf("ComputeKeys() found %d items , CPU check...\n", (int)found.size());
+	fprintf(stdout, "ComputeKeys() found %d items , CPU check...\n", (int)found.size());
 
 	//Int beta,beta2;
 	//beta.SetBase16((char *)"7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee");
@@ -909,16 +909,16 @@ bool GPUEngine::Check(Secp256K1* secp) {
 
 	if (ok && found.size() != 0) {
 		ok = false;
-		printf("Unexpected item found !\n");
+		fprintf(stdout, "Unexpected item found !\n");
 	}
 
 	if (!ok) {
 
 		int nbF = nbFoundCPU[0] + nbFoundCPU[1] + nbFoundCPU[2] +
 			nbFoundCPU[3] + nbFoundCPU[4] + nbFoundCPU[5];
-		printf("CPU found %d items\n", nbF);
+		fprintf(stdout, "CPU found %d items\n", nbF);
 
-		printf("GPU: point   correct [%d/%d]\n", nbOK[0], nbFoundCPU[0]);
+		fprintf(stdout, "GPU: point   correct [%d/%d]\n", nbOK[0], nbFoundCPU[0]);
 		/*
 		printf("GPU: endo #1 correct [%d/%d]\n", nbOK[1] , nbFoundCPU[1]);
 		printf("GPU: endo #2 correct [%d/%d]\n", nbOK[2] , nbFoundCPU[2]);
@@ -927,10 +927,10 @@ bool GPUEngine::Check(Secp256K1* secp) {
 		printf("GPU: sym/endo #1 correct [%d/%d]\n", nbOK[4] , nbFoundCPU[4]);
 		printf("GPU: sym/endo #2 correct [%d/%d]\n", nbOK[5] , nbFoundCPU[5]);
 		*/
-		printf("GPU/CPU check Failed !\n");
+		fprintf(stdout, "GPU/CPU check Failed !\n");
 	}
 
-	if (ok) printf("GPU/CPU check OK\n");
+	if (ok) fprintf(stdout, "GPU/CPU check OK\n");
 
 	delete[] p;
 	delete[] p2;

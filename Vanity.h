@@ -124,6 +124,7 @@ private:
 	std::vector<std::string>& inputAddresses;
 
 	BITCRACK_PARAM* bc;
+	void saveProgress(TH_PARAM* p, Int& lastSaveKey, BITCRACK_PARAM* bc);
 
 	Int firstGPUThreadLastPrivateKey;
 

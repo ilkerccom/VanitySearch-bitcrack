@@ -33,23 +33,23 @@ using namespace std;
 
 void printUsage() {
 
-	printf("VanitySearch [-check] [-u] [-b] [-stop] [-i inputfile]\n");
-	printf("             [-gpuId gpuId1[,gpuId2,...]] [-o outputfile] [-check] [address]\n");
-	printf(" address: address to search\n");
-	printf(" -u: Search uncompressed addresses\n");
-	printf(" -b: Search both uncompressed or compressed addresses\n");
-	printf(" -stop: Stop when all addresses are found\n");
-	printf(" -i inputfile: Get list of addresses to search from specified file\n");
-	printf(" -o outputfile: Output results to the specified file\n");
-	printf(" -gpu gpuId1,gpuId2,...: List of GPU(s) to use, default is 0\n");
-	printf(" -l: List cuda enabled devices\n");
-	printf(" -check: Check CPU and GPU kernel vs CPU\n");
-	printf(" --keyspace START \n");
-	printf("            START:END \n");
-	printf("            START:+COUNT \n");
-	printf("            :+COUNT \n");
-	printf("            :END \n");
-	printf("            Where START, END, COUNT are in hex format\n");
+	fprintf(stdout, "VanitySearch [-check] [-u] [-b] [-stop] [-i inputfile]\n");
+	fprintf(stdout, "             [-gpuId gpuId1[,gpuId2,...]] [-o outputfile] [-check] [address]\n");
+	fprintf(stdout, " address: address to search\n");
+	fprintf(stdout, " -u: Search uncompressed addresses\n");
+	fprintf(stdout, " -b: Search both uncompressed or compressed addresses\n");
+	fprintf(stdout, " -stop: Stop when all addresses are found\n");
+	fprintf(stdout, " -i inputfile: Get list of addresses to search from specified file\n");
+	fprintf(stdout, " -o outputfile: Output results to the specified file\n");
+	fprintf(stdout, " -gpu gpuId1,gpuId2,...: List of GPU(s) to use, default is 0\n");
+	fprintf(stdout, " -l: List cuda enabled devices\n");
+	fprintf(stdout, " -check: Check CPU and GPU kernel vs CPU\n");
+	fprintf(stdout, " --keyspace START \n");
+	fprintf(stdout, "            START:END \n");
+	fprintf(stdout, "            START:+COUNT \n");
+	fprintf(stdout, "            :+COUNT \n");
+	fprintf(stdout, "            :END \n");
+	fprintf(stdout, "            Where START, END, COUNT are in hex format\n");
 	exit(-1);
 }
 
@@ -64,7 +64,7 @@ int getInt(string name, char* v) {
 	}
 	catch (std::invalid_argument&) {
 
-		printf("[ERROR] Invalid %s argument, number expected\n", name.c_str());
+		fprintf(stderr, "[ERROR] Invalid %s argument, number expected\n", name.c_str());
 		exit(-1);
 	}
 
@@ -91,7 +91,7 @@ void getInts(string name, vector<int>& tokens, const string& text, char sep) {
 	}
 	catch (std::invalid_argument&) {
 
-		printf("[ERROR] Invalid %s argument, number expected\n", name.c_str());
+		fprintf(stderr, "[ERROR] Invalid %s argument, number expected\n", name.c_str());
 		exit(-1);
 	}
 }
@@ -119,7 +119,7 @@ void getKeySpace(const string& text, BITCRACK_PARAM* bc, Int& maxKey)
 		}
 		else if (item.length() > 64)
 		{
-			printf("[ERROR] keyspaceSTART: invalid privkey (64 length)\n");
+			fprintf(stderr, "[ERROR] keyspaceSTART: invalid privkey (64 length)\n");
 			exit(-1);
 		}
 		else
@@ -138,7 +138,7 @@ void getKeySpace(const string& text, BITCRACK_PARAM* bc, Int& maxKey)
 			item = std::string(text.substr(end + 1));
 			if (item.length() > 64 || item.length() == 0)
 			{
-				printf("[ERROR] keyspace__END: invalid privkey (64 length)\n");
+				fprintf(stderr, "[ERROR] keyspace__END: invalid privkey (64 length)\n");
 				exit(-1);
 			}
 
@@ -159,7 +159,7 @@ void getKeySpace(const string& text, BITCRACK_PARAM* bc, Int& maxKey)
 
 			if (item.length() > 64 || item.length() == 0)
 			{
-				printf("[ERROR] keyspace__END: invalid privkey (64 length)\n");
+				fprintf(stderr, "[ERROR] keyspace__END: invalid privkey (64 length)\n");
 				exit(-1);
 			}
 
@@ -179,7 +179,7 @@ void getKeySpace(const string& text, BITCRACK_PARAM* bc, Int& maxKey)
 	}
 	catch (std::invalid_argument&)
 	{
-		printf("[ERROR] Invalid --keyspace argument \n");
+		fprintf(stderr, "[ERROR] Invalid --keyspace argument \n");
 		exit(-1);
 	}
 }
@@ -188,19 +188,19 @@ void checkKeySpace(BITCRACK_PARAM* bc, Int& maxKey)
 {
 	if (bc->ksStart.IsGreater(&maxKey) || bc->ksFinish.IsGreater(&maxKey))
 	{
-		printf("[ERROR] START/END IsGreater %064s \n", maxKey.GetBase16().c_str());
+		fprintf(stderr, "[ERROR] START/END IsGreater %064s \n", maxKey.GetBase16().c_str());
 		exit(-1);
 	}
 
 	if (bc->ksFinish.IsLowerOrEqual(&bc->ksStart))
 	{
-		printf("[ERROR] END IsLowerOrEqual START \n");
+		fprintf(stderr, "[ERROR] END IsLowerOrEqual START \n");
 		exit(-1);
 	}
 
 	if (bc->ksFinish.IsLowerOrEqual(&bc->ksNext))
 	{
-		printf("[ERROR] END: IsLowerOrEqual NEXT \n");
+		fprintf(stderr, "[ERROR] END: IsLowerOrEqual NEXT \n");
 		exit(-1);
 	}
 
@@ -212,7 +212,7 @@ void parseFile(string fileName, vector<string>& lines) {
 	// Get file size
 	FILE* fp = fopen(fileName.c_str(), "rb");
 	if (fp == NULL) {
-		printf("[ERROR] ParseFile: cannot open %s %s\n", fileName.c_str(), strerror(errno));
+		fprintf(stderr, "[ERROR] ParseFile: cannot open %s %s\n", fileName.c_str(), strerror(errno));
 		exit(-1);
 	}
 	fseek(fp, 0L, SEEK_END);
@@ -240,25 +240,25 @@ void parseFile(string fileName, vector<string>& lines) {
 			nbLine++;
 			if (loaddingProgress) {
 				if ((nbLine % 50000) == 0)
-					printf("[Loading input file %5.1f%%]\r", ((double)nbLine * 100.0) / ((double)(nbAddr) * 33.0 / 34.0));
+					fprintf(stdout, "[Loading input file %5.1f%%]\r", ((double)nbLine * 100.0) / ((double)(nbAddr) * 33.0 / 34.0));
 			}
 		}
 	}
 
 	if (loaddingProgress)
-		printf("[Loading input file 100.0%%]\n");
+		fprintf(stdout, "[Loading input file 100.0%%]\n");
 }
 
 void generateKeyPair(Secp256K1* secp, string seed, int searchMode, bool paranoiacSeed) {
 
 	if (seed.length() < 8) {
-		printf("[ERROR] Use a seed of at leats 8 characters to generate a key pair\n");
-		printf("Ex: VanitySearch -s \"A Strong Password\" -kp\n");
+		fprintf(stderr, "[ERROR] Use a seed of at leats 8 characters to generate a key pair\n");
+		fprintf(stderr, "Ex: VanitySearch -s \"A Strong Password\" -kp\n");
 		exit(-1);
 	}
 
 	if (searchMode == SEARCH_BOTH) {
-		printf("[ERROR] Use compressed or uncompressed to generate a key pair\n");
+		fprintf(stderr, "[ERROR] Use compressed or uncompressed to generate a key pair\n");
 		exit(-1);
 	}
 
@@ -274,8 +274,8 @@ void generateKeyPair(Secp256K1* secp, string seed, int searchMode, bool paranoia
 	privKey.SetInt32(0);
 	sha256(hseed, 64, (unsigned char*)privKey.bits64);
 	Point p = secp->ComputePublicKey(&privKey);
-	printf("Priv : %s\n", secp->GetPrivAddress(compressed, privKey).c_str());
-	printf("Pub  : %s\n", secp->GetPublicKeyHex(compressed, p).c_str());
+	fprintf(stdout, "Priv : %s\n", secp->GetPrivAddress(compressed, privKey).c_str());
+	fprintf(stdout, "Pub  : %s\n", secp->GetPublicKeyHex(compressed, p).c_str());
 }
 
 void outputAdd(string outputFile, int addrType, string addr, string pAddr, string pAddrHex) {
@@ -286,7 +286,7 @@ void outputAdd(string outputFile, int addrType, string addr, string pAddr, strin
 	if (outputFile.length() > 0) {
 		f = fopen(outputFile.c_str(), "a");
 		if (f == NULL) {
-			printf("Cannot open %s for writing\n", outputFile.c_str());
+			fprintf(stderr, "Cannot open %s for writing\n", outputFile.c_str());
 			f = stdout;
 		}
 		else {
@@ -294,7 +294,7 @@ void outputAdd(string outputFile, int addrType, string addr, string pAddr, strin
 		}
 	}
 
-	fprintf(f, "\nPub Addr: %s\n", addr.c_str());
+	fprintf(f, "\nPublic Addr: %s\n", addr.c_str());
 
 	switch (addrType) {
 	case P2PKH:
@@ -453,7 +453,7 @@ int main(int argc, char* argv[]) {
 
 	// Browse arguments
 	if (argc < 2) {
-		printf("Not enough argument\n");
+		fprintf(stderr, "Not enough argument\n");
 		printUsage();
 	}
 
@@ -463,7 +463,7 @@ int main(int argc, char* argv[]) {
 	vector<int> gpuId = { 0 };
 	vector<int> gridSize = { -1 };
 	vector<string> address;
-	string outputFile = "found.txt";
+	string outputFile = "";
 	uint32_t maxFound = 32;
 	
 	BITCRACK_PARAM bitcrack, *bc;
@@ -478,7 +478,11 @@ int main(int argc, char* argv[]) {
 
 	while (a < argc) {
 
-		if (strcmp(argv[a], "-gpuId") == 0) {
+		if (strcmp(argv[a], "-gpu") == 0) {
+			//gpuEnable = true;
+			a++;
+		}
+		else if (strcmp(argv[a], "-gpuId") == 0) {
 			a++;
 			getInts("gpuId", gpuId, string(argv[a]), ',');
 			a++;
@@ -532,6 +536,12 @@ int main(int argc, char* argv[]) {
 			bc->ksNext.Set(&bc->ksStart);			
 			a++;
 		}
+		else if (strcmp(argv[a], "-t") == 0) {
+			a++;
+			//nbCPUThread = getInt("nbCPUThread", argv[a]);
+			a++;
+			//tSpecified = true;
+		}
 		else if (strcmp(argv[a], "--generator") == 0) {
 			a++;
 			int newgrpsize = 1024;
@@ -546,12 +556,12 @@ int main(int argc, char* argv[]) {
 			a++;
 		}
 		else {
-			printf("Unexpected %s argument\n", argv[a]);
+			fprintf(stderr, "Unexpected %s argument\n", argv[a]);
 			printUsage();
 		}
 	}
 
-	printf("VanitySearch v" RELEASE "\n");
+	fprintf(stdout, "VanitySearch v" RELEASE "\n");
 
 	if (gpuId.size() != gridSize.size()) {
 		if (gridSize.size() == 1 && gridSize[0] == -1) {
@@ -560,15 +570,16 @@ int main(int argc, char* argv[]) {
 				gridSize.push_back(-1);
 		}
 		else {
-			printf("Invalid gridSize or gpuId argument, must have same size\n");
+			fprintf(stderr, "Invalid gridSize or gpuId argument, must have same size\n");
 			printUsage();
 		}
 	}	
 
 	checkKeySpace(bc, maxKey);
 
-	printf("[keyspace] start=%064s\n", bc->ksStart.GetBase16().c_str());
-	printf("[keyspace]   end=%064s\n", bc->ksFinish.GetBase16().c_str());
+	fprintf(stdout, "[keyspace] start=%064s\n", bc->ksStart.GetBase16().c_str());
+	fprintf(stdout, "[keyspace]   end=%064s\n", bc->ksFinish.GetBase16().c_str());
+	fflush(stdout);
 
 	VanitySearch* v = new VanitySearch(secp, address, searchMode, stop, outputFile, maxFound, bc);
 	v->Search(gpuId, gridSize);	

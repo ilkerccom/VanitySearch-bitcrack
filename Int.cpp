@@ -737,7 +737,7 @@ void Int::Div(Int *a,Int *mod) {
   }
 
   if(a->IsZero()) {
-    printf("Divide by 0!\n");
+    fprintf(stdout, "Divide by 0!\n");
     return;
   }
 
