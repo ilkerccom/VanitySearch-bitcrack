@@ -28,6 +28,16 @@
 
 class VanitySearch;
 
+#ifdef WIN64
+typedef HANDLE THREAD_HANDLE;
+#define LOCK(mutex) WaitForSingleObject(mutex,INFINITE);
+#define UNLOCK(mutex) ReleaseMutex(mutex);
+#else
+typedef pthread_t THREAD_HANDLE;
+#define LOCK(mutex)  pthread_mutex_lock(&(mutex));
+#define UNLOCK(mutex) pthread_mutex_unlock(&(mutex));
+#endif
+
 typedef struct {
 
 	VanitySearch* obj;
@@ -91,6 +101,20 @@ private:
 	void checkAddresses(bool compressed, Int key, int i, Point p1);
 	void checkAddressesSSE(bool compressed, Int key, int i, Point p1, Point p2, Point p3, Point p4);
 	void output(std::string addr, std::string pAddr, std::string pAddrHex);
+
+#ifdef WIN64
+	HANDLE ghMutex;
+	HANDLE saveMutex;
+	THREAD_HANDLE LaunchThread(LPTHREAD_START_ROUTINE func, TH_PARAM* p);
+#else
+	pthread_mutex_t  ghMutex;
+	pthread_mutex_t  saveMutex;
+	THREAD_HANDLE LaunchThread(void* (*func) (void*), TH_PARAM* p);
+#endif
+
+	void JoinThreads(THREAD_HANDLE* handles, int nbThread);
+	void FreeHandles(THREAD_HANDLE* handles, int nbThread);
+
 	bool isAlive(TH_PARAM* p);
 	bool isSingularAddress(std::string pref);
 	bool hasStarted(TH_PARAM* p);
@@ -132,15 +156,6 @@ private:
 	Int lambda;
 	Int beta2;
 	Int lambda2;
-
-#ifdef WIN64
-	HANDLE ghMutex;
-	HANDLE ghMutex_IncrStartKey;
-#else
-	pthread_mutex_t  ghMutex;
-	pthread_mutex_t  ghMutex_IncrStartKey;
-#endif
-
 };
 
 #endif // VANITYH

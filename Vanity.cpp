@@ -884,7 +884,7 @@ void VanitySearch::FindKeyGPU(TH_PARAM * ph) {
 			{				
 				fprintf(stdout, "[EXIT] Range search completed \n");	
 				fflush(stdout);
-				endOfSearch = true;
+				//endOfSearch = true;
 				break;
 			}
 			else
@@ -900,6 +900,36 @@ void VanitySearch::FindKeyGPU(TH_PARAM * ph) {
 
 	ph->isRunning = false;
 }
+
+#ifdef WIN64
+
+THREAD_HANDLE VanitySearch::LaunchThread(LPTHREAD_START_ROUTINE func, TH_PARAM* p) {
+	p->obj = this;
+	return CreateThread(NULL, 0, func, (void*)(p), 0, NULL);
+}
+void  VanitySearch::JoinThreads(THREAD_HANDLE* handles, int nbThread) {
+	WaitForMultipleObjects(nbThread, handles, TRUE, INFINITE);
+}
+void  VanitySearch::FreeHandles(THREAD_HANDLE* handles, int nbThread) {
+	for (int i = 0; i < nbThread; i++)
+		CloseHandle(handles[i]);
+}
+#else
+
+THREAD_HANDLE VanitySearch::LaunchThread(void* (*func) (void*), TH_PARAM* p) {
+	THREAD_HANDLE h;
+	p->obj = this;
+	pthread_create(&h, NULL, func, (void*)(p));
+	return h;
+}
+void  VanitySearch::JoinThreads(THREAD_HANDLE* handles, int nbThread) {
+	for (int i = 0; i < nbThread; i++)
+		pthread_join(handles[i], NULL);
+}
+void  VanitySearch::FreeHandles(THREAD_HANDLE* handles, int nbThread) {
+}
+#endif
+
 
 bool VanitySearch::isAlive(TH_PARAM * p) {
 
@@ -959,13 +989,7 @@ void VanitySearch::Search(std::vector<int> gpuId, std::vector<int> gridSize) {
 	TH_PARAM* params = (TH_PARAM*)malloc(nbGPUThread * sizeof(TH_PARAM));
 	memset(params, 0, nbGPUThread * sizeof(TH_PARAM));
 
-#ifdef WIN64
-	ghMutex = CreateMutex(NULL, FALSE, NULL);
-	ghMutex_IncrStartKey = CreateMutex(NULL, FALSE, NULL);
-#else
-	ghMutex = PTHREAD_MUTEX_INITIALIZER;
-	ghMutex_IncrStartKey = PTHREAD_MUTEX_INITIALIZER;
-#endif	
+	THREAD_HANDLE* thHandles = (THREAD_HANDLE*)malloc(nbGPUThread * sizeof(THREAD_HANDLE));
 
 	// Launch GPU threads
 	for (int i = 0; i < nbGPUThread; i++) {
@@ -976,8 +1000,9 @@ void VanitySearch::Search(std::vector<int> gpuId, std::vector<int> gridSize) {
 		params[i].gridSize = gridSize[i];
 		params[i].THnextKey.Set(&bc->ksNext);
 #ifdef WIN64
-		DWORD thread_id;
-		CreateThread(NULL, 0, _FindKeyGPU, (void*)(params + i), 0, &thread_id);
+		//DWORD thread_id;
+		//CreateThread(NULL, 0, _FindKeyGPU, (void*)(params + i), 0, &thread_id);
+		thHandles[i] = LaunchThread(_FindKeyGPU, params + i);
 #else
 		pthread_t thread_id;
 		pthread_create(&thread_id, NULL, &_FindKeyGPU, (void*)(params + i));
@@ -1047,14 +1072,14 @@ void VanitySearch::Search(std::vector<int> gpuId, std::vector<int> gridSize) {
 		if (timeout60sec > 2.0) {	
 
 			// Save LowerPrivKey as saveProgress
-			saveProgress(params, lastSaveKey, bc);
+			/*saveProgress(params, lastSaveKey, bc);
 
 			// Reached end of keyspace
 			if (lastSaveKey.IsGreaterOrEqual(&bc->ksFinish)) {
 				endOfSearch = true;
 				fprintf(stdout, "[EXIT] Range search completed \n");	
 				fflush(stdout);
-			}
+			}*/
 
 			timeout60sec = 0.0;
 		}
@@ -1062,6 +1087,9 @@ void VanitySearch::Search(std::vector<int> gpuId, std::vector<int> gridSize) {
 		lastCount = count;		
 		t0 = t1;
 	}
+
+	JoinThreads(thHandles, nbGPUThread);
+	FreeHandles(thHandles, nbGPUThread);
 
 	free(params);
 	//free(patternFound);

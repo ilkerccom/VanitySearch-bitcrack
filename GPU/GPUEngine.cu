@@ -575,7 +575,7 @@ bool GPUEngine::callKernel() {
 			comp_keys_pattern << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
 				(searchMode, inputAddress, inputKey, maxFound, outputAddress);
 		}
-		else {
+		else {			
 			if (searchMode == SEARCH_COMPRESSED) {
 				comp_keys_comp << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
 					(inputAddress, inputAddressLookUp, inputKey, maxFound, outputAddress);

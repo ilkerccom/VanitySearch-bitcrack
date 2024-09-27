@@ -32,10 +32,14 @@ static const char* searchModes[] = { "Compressed","Uncompressed","Compressed or 
 #define STEP_SIZE 256
 
 // Number of thread per block
+#ifdef _DEBUG
+#define NUM_THREADS_PER_BLOCK 2
+#else
 #if STEP_SIZE <= 512
 #define NUM_THREADS_PER_BLOCK 512
 #elif STEP_SIZE > 512
 #define NUM_THREADS_PER_BLOCK 256
+#endif
 #endif
 
 #define ITEM_SIZE 28
