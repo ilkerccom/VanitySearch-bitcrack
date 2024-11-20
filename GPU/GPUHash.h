@@ -471,7 +471,6 @@ __device__ void RIPEMD160Transform(uint32_t s[5],uint32_t* w) {
 // ---------------------------------------------------------------------------------
 // Key encoding
 // ---------------------------------------------------------------------------------
-
 __device__ __noinline__ void _GetHash160Comp(uint64_t *x, uint8_t isOdd, uint8_t *hash) {
 
   uint32_t *x32 = (uint32_t *)(x);
@@ -510,7 +509,6 @@ __device__ __noinline__ void _GetHash160Comp(uint64_t *x, uint8_t isOdd, uint8_t
 
   RIPEMD160Initialize((uint32_t *)hash);
   RIPEMD160Transform((uint32_t *)hash, s);
-
 }
 
 __device__ __noinline__ void _GetHash160CompSym(uint64_t* x, uint8_t* h1, uint8_t* h2) {
@@ -575,7 +573,6 @@ __device__ __noinline__ void _GetHash160CompSym(uint64_t* x, uint8_t* h1, uint8_
 
     RIPEMD160Initialize((uint32_t*)h2);
     RIPEMD160Transform((uint32_t*)h2, s);
-
 }
 
 __device__ __noinline__ void _GetHash160(uint64_t *x, uint64_t *y, uint8_t *hash) {
@@ -634,7 +631,6 @@ __device__ __noinline__ void _GetHash160(uint64_t *x, uint64_t *y, uint8_t *hash
 
   RIPEMD160Initialize((uint32_t *)hash);
   RIPEMD160Transform((uint32_t *)hash, s);
-
 }
 
 __device__ __noinline__ void _GetHash160P2SHComp(uint64_t *x, uint8_t isOdd, uint8_t *hash) {
@@ -676,7 +672,6 @@ __device__ __noinline__ void _GetHash160P2SHComp(uint64_t *x, uint8_t isOdd, uin
 
   RIPEMD160Initialize((uint32_t *)hash);
   RIPEMD160Transform((uint32_t *)hash, s);
-
 }
 
 __device__ __noinline__ void _GetHash160P2SHUncomp(uint64_t *x, uint64_t *y, uint8_t *hash) {

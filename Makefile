@@ -11,7 +11,7 @@ SRC = Base58.cpp IntGroup.cpp main.cpp Random.cpp \
 
 OBJDIR = obj
 
-ccap=89
+ccap=86
 
 OBJET = $(addprefix $(OBJDIR)/, \
         Base58.o IntGroup.o main.o Random.o Timer.o Int.o \
@@ -49,7 +49,7 @@ all: VanitySearch
 
 VanitySearch: $(OBJET)
 	@echo Making vanitysearch...
-	$(CXX) $(OBJET) $(LFLAGS) -o vanitysearch
+	$(CXX) $(OBJET) $(LFLAGS) -o vs
 
 $(OBJET): | $(OBJDIR) $(OBJDIR)/GPU $(OBJDIR)/hash
 

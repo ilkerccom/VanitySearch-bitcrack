@@ -96,7 +96,7 @@ __device__ __noinline__ void CheckPoint(uint32_t *_h, int32_t incr, int32_t endo
 }
 
 __device__ __noinline__ void CheckPointCompLookupOnly(uint32_t* _h, int32_t incr, address_t* address, 
-    uint32_t* lookup32, uint32_t maxFound, uint32_t* out) 
+    uint32_t* lookup32, uint32_t* out) 
 {
     uint32_t   off;
     addressl_t  l32;
@@ -106,64 +106,43 @@ __device__ __noinline__ void CheckPointCompLookupOnly(uint32_t* _h, int32_t incr
     uint32_t   st;
     uint32_t   ed;
     uint32_t   mi;
-    uint32_t   lmi;
-    uint32_t   tid = (blockIdx.x * blockDim.x) + threadIdx.x;
-    //char       add[48];
+    uint32_t   lmi;    
+    
+    // Lookup table
+    pr0 = *(address_t*)(_h);
+    hit = address[pr0];
 
-    /*if (address == NULL) {
+    if (hit) {
 
-        // No lookup compute address and return
-        char* pattern = (char*)lookup32;
-        _GetAddress(type, _h, add);
-        if (_Match(add, pattern)) {
-            // found
-            goto addItem;
-        }
-
-    }
-    else {*/
-
-        // Lookup table
-        pr0 = *(address_t*)(_h);
-        hit = address[pr0];
-
-        if (hit) {
-
-            if (lookup32) {
-                off = lookup32[pr0];
-                l32 = _h[0];
-                st = off;
-                ed = off + hit - 1;
-                while (st <= ed) {
-                    mi = (st + ed) / 2;
-                    lmi = lookup32[mi];
-                    if (l32 < lmi) {
-                        ed = mi - 1;
-                    }
-                    else if (l32 == lmi) {
-                        // found
-                        goto addItem;
-                    }
-                    else {
-                        st = mi + 1;
-                    }
+        if (lookup32) {
+            off = lookup32[pr0];
+            l32 = _h[0];
+            st = off;
+            ed = off + hit - 1;
+            while (st <= ed) {
+                mi = (st + ed) / 2;
+                lmi = lookup32[mi];
+                if (l32 < lmi) {
+                    ed = mi - 1;
                 }
-                return;
-            }
-
-        addItem:
-
-            pos = atomicAdd(out, 1);
-            //if (pos < maxFound) {
-                out[pos * ITEM_SIZE32 + 1] = tid;
-                out[pos * ITEM_SIZE32 + 2] = (uint32_t)(incr << 16) | (uint32_t)(1 << 15); //| (uint32_t)(endo);
-                out[pos * ITEM_SIZE32 + 3] = _h[0];
-                out[pos * ITEM_SIZE32 + 4] = _h[1];
-                out[pos * ITEM_SIZE32 + 5] = _h[2];
-                out[pos * ITEM_SIZE32 + 6] = _h[3];
-                out[pos * ITEM_SIZE32 + 7] = _h[4];
-            //}
-        //}
+                else if (l32 == lmi) {
+                    // found
+                    pos = atomicAdd(out, 1);
+                    uint32_t tid = (blockIdx.x * blockDim.x) + threadIdx.x;
+                    out[pos * ITEM_SIZE32 + 1] = tid;
+                    out[pos * ITEM_SIZE32 + 2] = (uint32_t)(incr << 16) | (uint32_t)(1 << 15); //| (uint32_t)(endo);
+                    out[pos * ITEM_SIZE32 + 3] = _h[0];
+                    out[pos * ITEM_SIZE32 + 4] = _h[1];
+                    out[pos * ITEM_SIZE32 + 5] = _h[2];
+                    out[pos * ITEM_SIZE32 + 6] = _h[3];
+                    out[pos * ITEM_SIZE32 + 7] = _h[4];
+                    break;
+                }
+                else {
+                    st = mi + 1;
+                }
+            }            
+        }   
     }
 }
 
@@ -326,7 +305,7 @@ __device__ __noinline__ void CheckP2SHHash(uint32_t mode, address_t *address, ui
 
 #define CHECK_ADDRESS(incr) CheckHash(mode, sAddress, px, py, j*GRP_SIZE + (incr), lookup32, maxFound, out)
 
-__device__ void ComputeKeys(uint32_t mode, uint64_t *startx, uint64_t *starty, 
+/*__device__ void ComputeKeys(uint32_t mode, uint64_t* startx, uint64_t* starty,
                             address_t *sAddress, uint32_t *lookup32, uint32_t maxFound, uint32_t *out) {
 
   uint64_t dx[GRP_SIZE/2+1][4];
@@ -451,13 +430,13 @@ __device__ void ComputeKeys(uint32_t mode, uint64_t *startx, uint64_t *starty,
   Store256A(startx, px);
   Store256A(starty, py);
 
-}
+}*/
 
 // -----------------------------------------------------------------------------------------
 
 #define CHECK_ADDRESS_P2SH(incr) CheckP2SHHash(mode, sAddress, px, py, j*GRP_SIZE + (incr), lookup32, maxFound, out)
 
-__device__ void ComputeKeysP2SH(uint32_t mode, uint64_t *startx, uint64_t *starty,
+/*__device__ void ComputeKeysP2SH(uint32_t mode, uint64_t* startx, uint64_t* starty,
   address_t *sAddress, uint32_t *lookup32, uint32_t maxFound, uint32_t *out) {
 
   uint64_t dx[GRP_SIZE / 2 + 1][4];
@@ -582,7 +561,7 @@ __device__ void ComputeKeysP2SH(uint32_t mode, uint64_t *startx, uint64_t *start
   Store256A(startx, px);
   Store256A(starty, py);
 
-}
+}*/
 
 // -----------------------------------------------------------------------------------------
 // Optimized kernel for compressed P2PKH address only

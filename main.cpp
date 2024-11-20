@@ -25,7 +25,7 @@
 #include "hash/sha512.h"
 #include "hash/sha256.h"
 
-#define RELEASE "1.20 beta2 Puzzle67 optimized by Andrew"
+#define RELEASE "1.21 optimized by Andrew"
 
 using namespace std;
 
@@ -454,18 +454,19 @@ int main(int argc, char* argv[]) {
 	// Browse arguments
 	if (argc < 2) {
 		fprintf(stderr, "Not enough argument\n");
-		printUsage();
+		exit(-1);
 	}
 
 	int a = 1;
 	bool stop = false;
 	int searchMode = SEARCH_COMPRESSED;
 	vector<int> gpuId = { 0 };
-	vector<int> gridSize = { -1 };
+	vector<int> gridSize;
 	vector<string> address;
 	string outputFile = "";
-	uint32_t maxFound = 32;
+	uint32_t maxFound = 65536;
 	
+	// bitcrack mod
 	BITCRACK_PARAM bitcrack, *bc;
 	bc = &bitcrack;
 	Int maxKey;
@@ -498,7 +499,11 @@ int main(int argc, char* argv[]) {
 		else if (strcmp(argv[a], "-check") == 0) {
 			Int::Check();
 			secp->Check();
-			GPUEngine g(gpuId[0], maxFound);
+			if (gridSize.size() == 0) {
+				gridSize.push_back(-1);
+				gridSize.push_back(128);
+			}
+			GPUEngine g(gridSize[0], gridSize[1], gpuId[0], maxFound);
 			g.SetSearchMode(searchMode);
 			g.Check(secp);
 			exit(0);
@@ -557,32 +562,35 @@ int main(int argc, char* argv[]) {
 		}
 		else {
 			fprintf(stderr, "Unexpected %s argument\n", argv[a]);
-			printUsage();
+			exit(-1);
 		}
 	}
 
 	fprintf(stdout, "VanitySearch v" RELEASE "\n");
 
-	if (gpuId.size() != gridSize.size()) {
-		if (gridSize.size() == 1 && gridSize[0] == -1) {
-			gridSize.clear();
-			for (int i = 0; i < gpuId.size(); i++)
-				gridSize.push_back(-1);
+	if (gridSize.size() == 0) {
+		for (int i = 0; i < gpuId.size(); i++) {
+			gridSize.push_back(-1);
+			gridSize.push_back(128);
 		}
-		else {
-			fprintf(stderr, "Invalid gridSize or gpuId argument, must have same size\n");
-			printUsage();
-		}
-	}	
+	}
+	else if (gridSize.size() != gpuId.size() * 2) {
+		printf("Invalid gridSize or gpuId argument, must have coherent size\n");
+		exit(-1);
+	}
 
-	checkKeySpace(bc, maxKey);
+	//while (true)
+	{
+		checkKeySpace(bc, maxKey);
 
-	fprintf(stdout, "[keyspace] start=%064s\n", bc->ksStart.GetBase16().c_str());
-	fprintf(stdout, "[keyspace]   end=%064s\n", bc->ksFinish.GetBase16().c_str());
-	fflush(stdout);
+		fprintf(stdout, "[keyspace] start=%s\n", bc->ksStart.GetBase16().c_str());
+		fprintf(stdout, "[keyspace]   end=%s\n", bc->ksFinish.GetBase16().c_str());
+		fprintf(stdout, "Output File: %s\n", outputFile.c_str());
+		fflush(stdout);
 
-	VanitySearch* v = new VanitySearch(secp, address, searchMode, stop, outputFile, maxFound, bc);
-	v->Search(gpuId, gridSize);	
+		VanitySearch* v = new VanitySearch(secp, address, searchMode, stop, outputFile, maxFound, bc);
+		v->Search(gpuId, gridSize);
+	}
 
 	return 0;
 }

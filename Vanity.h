@@ -29,11 +29,11 @@
 class VanitySearch;
 
 #ifdef WIN64
-typedef HANDLE THREAD_HANDLE;
+//typedef HANDLE THREAD_HANDLE;
 #define LOCK(mutex) WaitForSingleObject(mutex,INFINITE);
 #define UNLOCK(mutex) ReleaseMutex(mutex);
 #else
-typedef pthread_t THREAD_HANDLE;
+//typedef pthread_t THREAD_HANDLE;
 #define LOCK(mutex)  pthread_mutex_lock(&(mutex));
 #define UNLOCK(mutex) pthread_mutex_unlock(&(mutex));
 #endif
@@ -44,7 +44,8 @@ typedef struct {
 	int  threadId;
 	bool isRunning;
 	bool hasStarted;
-	int  gridSize;
+	int  gridSizeX;
+	int  gridSizeY;
 	int  gpuId;
 	Int  THnextKey;
 
@@ -100,20 +101,15 @@ private:
 		Int& key, int endomorphism, bool mode);
 	void checkAddresses(bool compressed, Int key, int i, Point p1);
 	void checkAddressesSSE(bool compressed, Int key, int i, Point p1, Point p2, Point p3, Point p4);
-	void output(std::string addr, std::string pAddr, std::string pAddrHex);
+	void output(std::string addr, std::string pAddr, std::string pAddrHex, std::string pubKey);
 
 #ifdef WIN64
-	HANDLE ghMutex;
-	HANDLE saveMutex;
-	THREAD_HANDLE LaunchThread(LPTHREAD_START_ROUTINE func, TH_PARAM* p);
+	HANDLE mutex;
+	HANDLE ghMutex;	
 #else
-	pthread_mutex_t  ghMutex;
-	pthread_mutex_t  saveMutex;
-	THREAD_HANDLE LaunchThread(void* (*func) (void*), TH_PARAM* p);
-#endif
-
-	void JoinThreads(THREAD_HANDLE* handles, int nbThread);
-	void FreeHandles(THREAD_HANDLE* handles, int nbThread);
+	pthread_mutex_t  mutex;
+	pthread_mutex_t  ghMutex;	
+#endif	
 
 	bool isAlive(TH_PARAM* p);
 	bool isSingularAddress(std::string pref);
@@ -121,22 +117,19 @@ private:
 	uint64_t getGPUCount();
 	bool initAddress(std::string& address, ADDRESS_ITEM* it);
 	void updateFound();
-	void getGPUStartingKeys(int thId, Int& tRangeStart, Int& tRangeEnd, int groupSize, int numThreadsGPU, Int* keys, Point* p, Int& THnextKey);
+	void getGPUStartingKeys(Int& tRangeStart, Int& tRangeEnd, int groupSize, int numThreadsGPU, Int* privateKeys, Point* publicKeys);
+	void getGPUStartingKeysMT(Int& tRangeStart, Int& tRangeEnd, int groupSize, int numThreadsGPU, Int* privateKeys, Point* publicKeys);
 	void enumCaseUnsentiveAddress(std::string s, std::vector<std::string>& list);
 
 	Secp256K1* secp;
-	Int startKey;
-	Int IncrStartKey;
-	Point startPubKey;
-	bool startPubKeySpecified;
-	uint64_t      counters[256];
-	uint64_t task_counters[256];
+	Int startKey;		
+	uint64_t      counters[256];	
 	double startTime;
 	int searchType;
 	int searchMode;
 	bool stopWhenFound;
 	bool endOfSearch;
-	int nbGPUThread;
+	int numGPUs;
 	int nbFoundKey;
 	uint32_t nbAddress;
 	std::string outputFile;
@@ -145,7 +138,7 @@ private:
 	std::vector<ADDRESS_TABLE_ITEM> addresses;
 	std::vector<address_t> usedAddress;
 	std::vector<LADDRESS> usedAddressL;
-	std::vector<std::string>& inputAddresses;
+	std::vector<std::string>& inputAddresses;	
 
 	BITCRACK_PARAM* bc;
 	void saveProgress(TH_PARAM* p, Int& lastSaveKey, BITCRACK_PARAM* bc);

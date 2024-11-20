@@ -33,7 +33,7 @@ static const char* searchModes[] = { "Compressed","Uncompressed","Compressed or 
 
 // Number of thread per block
 #ifdef _DEBUG
-#define NUM_THREADS_PER_BLOCK 2
+#define NUM_THREADS_PER_BLOCK 4
 #else
 #if STEP_SIZE <= 512
 #define NUM_THREADS_PER_BLOCK 512
@@ -67,7 +67,7 @@ class GPUEngine {
 
 public:
 
-	GPUEngine(int gpuId, uint32_t maxFound);
+	GPUEngine(int nbThreadGroup, int nbThreadPerGroup, int gpuId, uint32_t maxFound);
 	~GPUEngine();
 	void SetAddress(std::vector<address_t> addresses);
 	void SetAddress(std::vector<LADDRESS> addresses, uint32_t totalAddress);
@@ -76,7 +76,7 @@ public:
 	void SetSearchType(int searchType);
 	void SetPattern(const char* pattern);
 	bool Launch(std::vector<ITEM>& addressFound, bool spinWait);
-	int GetnumThreadsGPU();
+	int GetNumThreadsGPU();
 	int GetGroupSize();
 
 	bool Check(Secp256K1* secp);
@@ -99,8 +99,8 @@ private:
 	uint32_t* inputAddressLookUpPinned;
 	uint64_t* inputKey;
 	uint64_t* inputKeyPinned;
-	uint32_t* outputAddress;
-	uint32_t* outputAddressPinned;
+	uint32_t* outputBuffer;
+	uint32_t* outputBufferPinned;
 	bool initialised;
 	uint32_t searchMode;
 	uint32_t searchType;

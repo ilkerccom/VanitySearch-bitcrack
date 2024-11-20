@@ -38,10 +38,10 @@
 
 // ---------------------------------------------------------------------------------------
 
-__global__ void comp_keys(uint32_t mode, address_t* address, uint32_t* lookup32, uint64_t* keys, uint32_t maxFound, uint32_t* found) {
+/*__global__ void comp_keys(uint32_t mode, address_t* address, uint32_t* lookup32, uint64_t* keys, uint32_t maxFound, uint32_t* found) {
 
 	int xPtr = (blockIdx.x * blockDim.x) * 8;
-	int yPtr = xPtr + 4 * NUM_THREADS_PER_BLOCK;
+	int yPtr = xPtr + 4 * blockDim.x;
 	ComputeKeys(mode, keys + xPtr, keys + yPtr, address, lookup32, maxFound, found);
 
 }
@@ -49,16 +49,16 @@ __global__ void comp_keys(uint32_t mode, address_t* address, uint32_t* lookup32,
 __global__ void comp_keys_p2sh(uint32_t mode, address_t* address, uint32_t* lookup32, uint64_t* keys, uint32_t maxFound, uint32_t* found) {
 
 	int xPtr = (blockIdx.x * blockDim.x) * 8;
-	int yPtr = xPtr + 4 * NUM_THREADS_PER_BLOCK;
+	int yPtr = xPtr + 4 * blockDim.x;
 	ComputeKeysP2SH(mode, keys + xPtr, keys + yPtr, address, lookup32, maxFound, found);
 
-}
+}*/
 
 // Andrew kernel, STEP_SIZE not used
-__global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t* keys, uint32_t maxFound, uint32_t* out) {
+__global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t* keys, uint32_t* out) {
 
 	int xPtr = (blockIdx.x * blockDim.x) * 8;
-	int yPtr = xPtr + 4 * NUM_THREADS_PER_BLOCK;
+	int yPtr = xPtr + 4 * blockDim.x;
 
 	uint64_t* startx = keys + xPtr;
 	uint64_t* starty = keys + yPtr;
@@ -78,7 +78,7 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 	// Load starting key
 	__syncthreads();
 	Load256A(sx, startx);
-	Load256A(sy, starty);
+	Load256A(sy, starty);		
 	Load256(px, sx);
 	Load256(py, sy);
 
@@ -101,7 +101,7 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 	//CheckHashComp(sAddress, px, (uint8_t)(py[0] & 1), j * GRP_SIZE + (GRP_SIZE / 2), lookup32, maxFound, out);
 	_GetHash160Comp(px, (uint8_t)(py[0] & 1), (uint8_t*)h);
 	//CheckPoint(h, j * GRP_SIZE + (GRP_SIZE / 2), 0, true, sAddress, lookup32, maxFound, out, P2PKH);
-	CheckPointCompLookupOnly(h, GRP_SIZE / 2, sAddress, lookup32, maxFound, out);
+	CheckPointCompLookupOnly(h, GRP_SIZE / 2, sAddress, lookup32, out);
 
 	ModNeg256(pyn, py);
 
@@ -125,7 +125,7 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 		//CheckHashComp(sAddress, px, (uint8_t)(py[0] & 1), j * GRP_SIZE + (GRP_SIZE / 2 + (i + 1)), lookup32, maxFound, out);
 		_GetHash160Comp(px, (uint8_t)(py[0] & 1), (uint8_t*)h);
 		//CheckPoint(h, j * GRP_SIZE + (GRP_SIZE / 2 + (i + 1)), 0, true, sAddress, lookup32, maxFound, out, P2PKH);
-		CheckPointCompLookupOnly(h, GRP_SIZE / 2 + (i + 1), sAddress, lookup32, maxFound, out);
+		CheckPointCompLookupOnly(h, GRP_SIZE / 2 + (i + 1), sAddress, lookup32, out);
 
 		// P = StartPoint - i*G, if (x,y) = i*G then (x,-y) = -i*G
 		Load256(px, sx);
@@ -135,16 +135,16 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 		_ModSqr(_p2, _s);             // _p = pow2(s)
 
 		ModSub256(px, _p2, px);
-		ModSub256(px, Gx[i]);         // px = pow2(s) - p1.x - p2.x;
+		ModSub256(px, Gx[i]);         // px = pow2(s) - p1.x - p2.x;		
 
-		ModSub256(py, Gx[i], px);
-		_ModMult(py, _s);             // py = - s*(ret.x-p2.x)
-		ModAdd256(py, Gy[i]);         // py = - p2.y - s*(ret.x-p2.x);  
+		ModSub256(py, px, Gx[i]);
+		_ModMult(py, _s);             // py = s*(ret.x-p2.x)
+		ModSub256(py, Gy[i], py);     // py = - p2.y - s*(ret.x-p2.x);
 
 		//CheckHashComp(sAddress, px, (uint8_t)(py[0] & 1), j * GRP_SIZE + (GRP_SIZE / 2 - (i + 1)), lookup32, maxFound, out);
 		_GetHash160Comp(px, (uint8_t)(py[0] & 1), (uint8_t*)h);
 		//CheckPoint(h, j * GRP_SIZE + (GRP_SIZE / 2 - (i + 1)), 0, true, sAddress, lookup32, maxFound, out, P2PKH);
-		CheckPointCompLookupOnly(h, GRP_SIZE / 2 - (i + 1), sAddress, lookup32, maxFound, out);
+		CheckPointCompLookupOnly(h, GRP_SIZE / 2 - (i + 1), sAddress, lookup32, out);
 	}
 
 	// First point (startP - (GRP_SZIE/2)*G)
@@ -157,16 +157,16 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 	_ModSqr(_p2, _s);              // _p = pow2(s)
 
 	ModSub256(px, _p2, px);
-	ModSub256(px, Gx[i]);         // px = pow2(s) - p1.x - p2.x;
+	ModSub256(px, Gx[i]);         // px = pow2(s) - p1.x - p2.x;	
 
-	ModSub256(py, Gx[i], px);
-	_ModMult(py, _s);             // py = - s*(ret.x-p2.x)
-	ModAdd256(py, Gy[i]);         // py = - p2.y - s*(ret.x-p2.x);  
+	ModSub256(py, px, Gx[i]);
+	_ModMult(py, _s);             // py = s*(ret.x-p2.x)
+	ModSub256(py, Gy[i], py);     // py = - p2.y - s*(ret.x-p2.x);
 
 	//CheckHashComp(sAddress, px, (uint8_t)(py[0] & 1), j * GRP_SIZE + (0), lookup32, maxFound, out);
 	_GetHash160Comp(px, (uint8_t)(py[0] & 1), (uint8_t*)h);
 	//CheckPoint(h, j * GRP_SIZE + (0), 0, true, sAddress, lookup32, maxFound, out, P2PKH);
-	CheckPointCompLookupOnly(h, 0, sAddress, lookup32, maxFound, out);
+	CheckPointCompLookupOnly(h, 0, sAddress, lookup32, out);
 
 	i++;
 
@@ -193,10 +193,10 @@ __global__ void comp_keys_comp(address_t* sAddress, uint32_t* lookup32, uint64_t
 	Store256A(starty, py);
 }
 
-__global__ void comp_keys_pattern(uint32_t mode, address_t* pattern, uint64_t* keys, uint32_t maxFound, uint32_t* found) {
+/*__global__ void comp_keys_pattern(uint32_t mode, address_t* pattern, uint64_t* keys, uint32_t maxFound, uint32_t* found) {
 
 	int xPtr = (blockIdx.x * blockDim.x) * 8;
-	int yPtr = xPtr + 4 * NUM_THREADS_PER_BLOCK;
+	int yPtr = xPtr + 4 * blockDim.x;
 	ComputeKeys(mode, keys + xPtr, keys + yPtr, NULL, (uint32_t*)pattern, maxFound, found);
 
 }
@@ -204,10 +204,10 @@ __global__ void comp_keys_pattern(uint32_t mode, address_t* pattern, uint64_t* k
 __global__ void comp_keys_p2sh_pattern(uint32_t mode, address_t* pattern, uint64_t* keys, uint32_t maxFound, uint32_t* found) {
 
 	int xPtr = (blockIdx.x * blockDim.x) * 8;
-	int yPtr = xPtr + 4 * NUM_THREADS_PER_BLOCK;
+	int yPtr = xPtr + 4 * blockDim.x;
 	ComputeKeysP2SH(mode, keys + xPtr, keys + yPtr, NULL, (uint32_t*)pattern, maxFound, found);
 
-}
+}*/
 
 //#define FULLCHECK
 #ifdef FULLCHECK
@@ -295,7 +295,7 @@ int _ConvertSMVer2Cores(int major, int minor) {
 	return 0;
 }
 
-GPUEngine::GPUEngine(int gpuId, uint32_t maxFound) {
+GPUEngine::GPUEngine(int nbThreadGroup, int nbThreadPerGroup, int gpuId, uint32_t maxFound) {
 
 	// Initialise CUDA  
 	initialised = false;
@@ -334,7 +334,18 @@ GPUEngine::GPUEngine(int gpuId, uint32_t maxFound) {
 	cudaDeviceProp deviceProp;
 	cudaGetDeviceProperties(&deviceProp, gpuId);
 
-	numBlocks = deviceProp.multiProcessorCount * 64;
+	//numBlocks = deviceProp.multiProcessorCount * 64;
+
+	int numBlocksMin = deviceProp.multiProcessorCount * 64;
+	numBlocks = 64;
+	while (numBlocks <= numBlocksMin)
+	{
+		numBlocks *= 2;
+	}
+
+#ifdef _DEBUG
+	numBlocks = 4;
+#endif
 
 	this->numThreadsGPU = numBlocks * NUM_THREADS_PER_BLOCK;
 	this->maxFound = maxFound;
@@ -368,12 +379,12 @@ GPUEngine::GPUEngine(int gpuId, uint32_t maxFound) {
 		fprintf(stderr, "GPUEngine: Allocate input pinned memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
-	err = cudaMalloc((void**)&outputAddress, outputSize);
+	err = cudaMalloc((void**)&outputBuffer, outputSize);
 	if (err != cudaSuccess) {
 		fprintf(stderr, "GPUEngine: Allocate output memory: %s\n", cudaGetErrorString(err));
 		return;
 	}
-	err = cudaHostAlloc(&outputAddressPinned, outputSize, cudaHostAllocMapped);
+	err = cudaHostAlloc(&outputBufferPinned, outputSize, cudaHostAllocMapped);
 	if (err != cudaSuccess) {
 		fprintf(stderr, "GPUEngine: Allocate output pinned memory: %s\n", cudaGetErrorString(err));
 		return;
@@ -442,11 +453,11 @@ GPUEngine::~GPUEngine() {
 	cudaFree(inputKey);
 	cudaFree(inputAddress);
 	if (inputAddressLookUp) cudaFree(inputAddressLookUp);
-	cudaFreeHost(outputAddressPinned);
-	cudaFree(outputAddress);
+	cudaFreeHost(outputBufferPinned);
+	cudaFree(outputBuffer);
 }
 
-int GPUEngine::GetnumThreadsGPU() {
+int GPUEngine::GetNumThreadsGPU() {
 	return numThreadsGPU;
 }
 
@@ -549,43 +560,10 @@ void GPUEngine::SetAddress(std::vector<LADDRESS> addresses, uint32_t totalAddres
 bool GPUEngine::callKernel() {
 
 	// Reset nbFound
-	cudaMemset(outputAddress, 0, 4);
-
-	// Call the kernel (Perform STEP_SIZE keys per thread)
-	if (searchType == P2SH) {
-
-		if (hasPattern) {
-			comp_keys_p2sh_pattern << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
-				(searchMode, inputAddress, inputKey, maxFound, outputAddress);
-		}
-		else {
-			comp_keys_p2sh << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
-				(searchMode, inputAddress, inputAddressLookUp, inputKey, maxFound, outputAddress);
-		}
-	}
-	else {
-
-		// P2PKH or BECH32
-		if (hasPattern) {
-			if (searchType == BECH32) {
-				// TODO
-				fprintf(stderr, "GPUEngine: (TODO) BECH32 not yet supported with wildard\n");
-				return false;
-			}
-			comp_keys_pattern << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
-				(searchMode, inputAddress, inputKey, maxFound, outputAddress);
-		}
-		else {			
-			if (searchMode == SEARCH_COMPRESSED) {
-				comp_keys_comp << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
-					(inputAddress, inputAddressLookUp, inputKey, maxFound, outputAddress);
-			}
-			else {
-				comp_keys << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
-					(searchMode, inputAddress, inputAddressLookUp, inputKey, maxFound, outputAddress);
-			}
-		}
-	}
+	cudaMemset(outputBuffer, 0, 4);
+			
+	comp_keys_comp << < numThreadsGPU / NUM_THREADS_PER_BLOCK, NUM_THREADS_PER_BLOCK >> >
+		(inputAddress, inputAddressLookUp, inputKey, outputBuffer);		
 
 	cudaError_t err = cudaGetLastError();
 	if (err != cudaSuccess) {
@@ -617,7 +595,7 @@ bool GPUEngine::SetKeys(Point* p) {
 	// Fill device memory
 	cudaMemcpy(inputKey, inputKeyPinned, numThreadsGPU * 32 * 2, cudaMemcpyHostToDevice);
 
-	// We do not need the input pinned memory anymore ????
+	// We do not need the input pinned memory anymore
 	cudaFreeHost(inputKeyPinned);
 	inputKeyPinned = NULL;
 
@@ -636,7 +614,7 @@ bool GPUEngine::Launch(std::vector<ITEM>& addressFound, bool spinWait) {
 	// Get the result
 	if (spinWait) {
 
-		cudaMemcpy(outputAddressPinned, outputAddress, outputSize, cudaMemcpyDeviceToHost);
+		cudaMemcpy(outputBufferPinned, outputBuffer, outputSize, cudaMemcpyDeviceToHost);
 	}
 	else {
 
@@ -645,7 +623,7 @@ bool GPUEngine::Launch(std::vector<ITEM>& addressFound, bool spinWait) {
 		cudaEventCreate(&evt);
 
 		//cudaMemcpy(outputAddressPinned, outputAddress, 4, cudaMemcpyDeviceToHost);
-		cudaMemcpyAsync(outputAddressPinned, outputAddress, 4, cudaMemcpyDeviceToHost, 0);
+		cudaMemcpyAsync(outputBufferPinned, outputBuffer, 4, cudaMemcpyDeviceToHost, 0);
 
 		cudaEventRecord(evt, 0);
 		while (cudaEventQuery(evt) == cudaErrorNotReady) {
@@ -662,7 +640,7 @@ bool GPUEngine::Launch(std::vector<ITEM>& addressFound, bool spinWait) {
 	}
 
 	// Look for address found
-	uint32_t nbFound = outputAddressPinned[0];
+	uint32_t nbFound = outputBufferPinned[0];
 	if (nbFound > maxFound) {
 		// address has been lost
 		if (!lostWarning) {
@@ -673,10 +651,10 @@ bool GPUEngine::Launch(std::vector<ITEM>& addressFound, bool spinWait) {
 	}
 
 	// When can perform a standard copy, the kernel is eneded
-	cudaMemcpy(outputAddressPinned, outputAddress, nbFound * ITEM_SIZE + 4, cudaMemcpyDeviceToHost);
+	cudaMemcpy(outputBufferPinned, outputBuffer, nbFound * ITEM_SIZE + 4, cudaMemcpyDeviceToHost);
 
 	for (uint32_t i = 0; i < nbFound; i++) {
-		uint32_t* itemPtr = outputAddressPinned + (i * ITEM_SIZE32 + 1);
+		uint32_t* itemPtr = outputBufferPinned + (i * ITEM_SIZE32 + 1);
 		ITEM it;
 		it.thId = itemPtr[0];
 		int16_t* ptr = (int16_t*)&(itemPtr[1]);
