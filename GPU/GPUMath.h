@@ -325,7 +325,7 @@ __device__ __forceinline__ uint32_t ctz(uint64_t x) {
 #define SWAP(tmp,x,y) tmp = x; x = y; y = tmp;
 #define MSK62 0x3FFFFFFFFFFFFFFF
 
-__device__ void _DivStep62(uint64_t u[5],uint64_t v[5],
+__device__ void _DivStep62(uint64_t u[5], uint64_t v[5],
   int32_t* pos,
   int64_t* uu,int64_t* uv,
   int64_t* vu,int64_t* vv) {
@@ -567,8 +567,7 @@ __device__ __noinline__ void _ModInv(uint64_t* R) {
 // Compute a*b*(mod n)
 // a and b must be lower than n
 // ---------------------------------------------------------------------------------------
-
-__device__ void _ModMult(uint64_t *r, uint64_t *a, uint64_t *b) {
+__device__ void _ModMult(uint64_t * r, uint64_t * a, uint64_t * b) {
 
   uint64_t r512[8];
   uint64_t t[NBBLOCK];
@@ -665,7 +664,7 @@ __device__ void _ModMult(uint64_t *r, uint64_t *a) {
 
 }
 
-__device__ void _ModSqr(uint64_t *rp, const uint64_t *up) {
+__device__ void _ModSqr(uint64_t* rp, const uint64_t* up) {
 
   uint64_t r512[8];
 
@@ -678,7 +677,6 @@ __device__ void _ModSqr(uint64_t *rp, const uint64_t *up) {
 
   uint64_t t1;
   uint64_t t2;
-
 
   //k=0
   UMULLO(r512[0], up[0], up[0]);
@@ -836,6 +834,259 @@ __device__ void _ModSqr(uint64_t *rp, const uint64_t *up) {
 #endif
 
 }
+
+/*__device__ void _ModSqr(uint64_t* rp, const uint64_t* up) {
+
+    uint64_t r512[8];
+
+#if 1
+
+    // 256*256 square multiplier
+    uint64_t SL, SH;
+
+    {
+        // Line 0 (5 limbs)
+        uint64_t r01L, r01H;
+        uint64_t r02L, r02H;
+        uint64_t r03L, r03H;
+
+        UMULLO(SL, up[0], up[0]);
+        UMULHI(SH, up[0], up[0]);
+        UMULLO(r01L, up[0], up[1]);
+        UMULHI(r01H, up[0], up[1]);
+        UMULLO(r02L, up[0], up[2]);
+        UMULHI(r02H, up[0], up[2]);
+        UMULLO(r03L, up[0], up[3]);
+        UMULHI(r03H, up[0], up[3]);
+
+        r512[0] = SL;
+        r512[1] = r01L;
+        r512[2] = r02L;
+        r512[3] = r03L;
+
+        UADDO1(r512[1], SH);
+        UADDC1(r512[2], r01H);
+        UADDC1(r512[3], r02H);
+        UADD(r512[4], r03H, 0ULL);
+
+        // Line 1 (6 limbs)
+        uint64_t r12L, r12H;
+        uint64_t r13L, r13H;
+
+        UMULLO(SL, up[1], up[1]);
+        UMULHI(SH, up[1], up[1]);
+        UMULLO(r12L, up[1], up[2]);
+        UMULHI(r12H, up[1], up[2]);
+        UMULLO(r13L, up[1], up[3]);
+        UMULHI(r13H, up[1], up[3]);
+
+        UADDO1(r512[1], r01L);
+        UADDC1(r512[2], SL);
+        UADDC1(r512[3], r12L);
+        UADDC1(r512[4], r13L);
+        UADD(r512[5], r13H, 0ULL);
+
+        UADDO1(r512[2], r01H);
+        UADDC1(r512[3], SH);
+        UADDC1(r512[4], r12H);
+        UADD1(r512[5], 0ULL);
+
+        // Line 2 (7 lims)
+        uint64_t r23L, r23H;
+
+        UMULLO(SL, up[2], up[2]);
+        UMULHI(SH, up[2], up[2]);
+        UMULLO(r23L, up[2], up[3]);
+        UMULHI(r23H, up[2], up[3]);
+
+        UADDO1(r512[2], r02L);
+        UADDC1(r512[3], r12L);
+        UADDC1(r512[4], SL);
+        UADDC1(r512[5], r23L);
+        UADD(r512[6], r23H, 0ULL);
+
+        UADDO1(r512[3], r02H);
+        UADDC1(r512[4], r12H);
+        UADDC1(r512[5], SH);
+        UADD1(r512[6], 0ULL);
+
+        // Line 3 (8 limbs)
+
+        UMULLO(SL, up[3], up[3]);
+        UMULHI(SH, up[3], up[3]);
+
+        UADDO1(r512[3], r03L);
+        UADDC1(r512[4], r13L);
+        UADDC1(r512[5], r23L);
+        UADDC1(r512[6], SL);
+        UADD(r512[7], SH, 0ULL);
+
+        UADDO1(r512[4], r03H);
+        UADDC1(r512[5], r13H);
+        UADDC1(r512[6], r23H);
+        UADD1(r512[7], 0ULL);
+    }
+
+    uint64_t t[NBBLOCK];
+
+    // Reduce from 512 to 320 
+    UMult(t, (r512 + 4), 0x1000003D1ULL);
+    UADDO1(r512[0], t[0]);
+    UADDC1(r512[1], t[1]);
+    UADDC1(r512[2], t[2]);
+    UADDC1(r512[3], t[3]);
+
+    // Reduce from 320 to 256
+    UADD1(t[4], 0ULL);
+    UMULLO(SL, t[4], 0x1000003D1ULL);
+    UMULHI(SH, t[4], 0x1000003D1ULL);
+    UADDO(rp[0], r512[0], SL);
+    UADDC(rp[1], r512[1], SH);
+    UADDC(rp[2], r512[2], 0ULL);
+    UADD(rp[3], r512[3], 0ULL);
+
+#endif
+
+#if 0
+
+    uint64_t r0;
+    uint64_t r1;
+    uint64_t r3;
+    uint64_t r4;
+
+    uint64_t t1;
+    uint64_t t2;
+
+    uint64_t u10, u11;
+
+    //k=0
+    UMULLO(r512[0], up[0], up[0]);
+    UMULHI(r1, up[0], up[0]);
+
+    //k=1
+    UMULLO(r3, up[0], up[1]);
+    UMULHI(r4, up[0], up[1]);
+    UADDO1(r3, r3);
+    UADDC1(r4, r4);
+    UADD(t1, 0x0ULL, 0x0ULL);
+    UADDO1(r3, r1);
+    UADDC1(r4, 0x0ULL);
+    UADD1(t1, 0x0ULL);
+    r512[1] = r3;
+
+    //k=2
+    UMULLO(r0, up[0], up[2]);
+    UMULHI(r1, up[0], up[2]);
+    UADDO1(r0, r0);
+    UADDC1(r1, r1);
+    UADD(t2, 0x0ULL, 0x0ULL);
+    UMULLO(u10, up[1], up[1]);
+    UMULHI(u11, up[1], up[1]);
+    UADDO1(r0, u10);
+    UADDC1(r1, u11);
+    UADD1(t2, 0x0ULL);
+    UADDO1(r0, r4);
+    UADDC1(r1, t1);
+    UADD1(t2, 0x0ULL);
+
+    r512[2] = r0;
+
+    //k=3
+    UMULLO(r3, up[0], up[3]);
+    UMULHI(r4, up[0], up[3]);
+    UMULLO(u10, up[1], up[2]);
+    UMULHI(u11, up[1], up[2]);
+    UADDO1(r3, u10);
+    UADDC1(r4, u11);
+    UADD(t1, 0x0ULL, 0x0ULL);
+    t1 += t1;
+    UADDO1(r3, r3);
+    UADDC1(r4, r4);
+    UADD1(t1, 0x0ULL);
+    UADDO1(r3, r1);
+    UADDC1(r4, t2);
+    UADD1(t1, 0x0ULL);
+
+    r512[3] = r3;
+
+    //k=4
+    UMULLO(r0, up[1], up[3]);
+    UMULHI(r1, up[1], up[3]);
+    UADDO1(r0, r0);
+    UADDC1(r1, r1);
+    UADD(t2, 0x0ULL, 0x0ULL);
+    UMULLO(u10, up[2], up[2]);
+    UMULHI(u11, up[2], up[2]);
+    UADDO1(r0, u10);
+    UADDC1(r1, u11);
+    UADD1(t2, 0x0ULL);
+    UADDO1(r0, r4);
+    UADDC1(r1, t1);
+    UADD1(t2, 0x0ULL);
+
+    r512[4] = r0;
+
+    //k=5
+    UMULLO(r3, up[2], up[3]);
+    UMULHI(r4, up[2], up[3]);
+    UADDO1(r3, r3);
+    UADDC1(r4, r4);
+    UADD(t1, 0x0ULL, 0x0ULL);
+    UADDO1(r3, r1);
+    UADDC1(r4, t2);
+    UADD1(t1, 0x0ULL);
+
+    r512[5] = r3;
+
+    //k=6
+    UMULLO(r0, up[3], up[3]);
+    UMULHI(r1, up[3], up[3]);
+    UADDO1(r0, r4);
+    UADD1(r1, t1);
+    r512[6] = r0;
+
+    //k=7
+    r512[7] = r1;
+
+    uint64_t z1, z2, z3, z4, z5, z6, z7, z8;
+
+    UMULLO(z3, r512[5], 0x1000003d1ULL);
+    UMULHI(z4, r512[5], 0x1000003d1ULL);
+    UMULLO(z5, r512[6], 0x1000003d1ULL);
+    UMULHI(z6, r512[6], 0x1000003d1ULL);
+    UMULLO(z7, r512[7], 0x1000003d1ULL);
+    UMULHI(z8, r512[7], 0x1000003d1ULL);
+    UMULLO(z1, r512[4], 0x1000003d1ULL);
+    UMULHI(z2, r512[4], 0x1000003d1ULL);
+    UADDO1(z1, r512[0]);
+    UADD1(z2, 0x0ULL);
+
+
+    UADDO1(z2, r512[1]);
+    UADDC1(z4, r512[2]);
+    UADDC1(z6, r512[3]);
+    UADD1(z8, 0x0ULL);
+
+    UADDO1(z3, z2);
+    UADDC1(z5, z4);
+    UADDC1(z7, z6);
+    UADD1(z8, 0x0ULL);
+
+    UMULLO(u10, z8, 0x1000003d1ULL);
+    UMULHI(u11, z8, 0x1000003d1ULL);
+    UADDO1(z1, u10);
+    UADDC1(z3, u11);
+    UADDC1(z5, 0x0ULL);
+    UADD1(z7, 0x0ULL);
+
+    rp[0] = z1;
+    rp[1] = z3;
+    rp[2] = z5;
+    rp[3] = z7;
+
+#endif
+
+}*/
 
 // ---------------------------------------------------------------------------------------
 // Compute all ModInv of the group

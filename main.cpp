@@ -25,7 +25,7 @@
 #include "hash/sha512.h"
 #include "hash/sha256.h"
 
-#define RELEASE "1.21 optimized by Andrew"
+#define RELEASE "1.22 optimized by Andrew"
 
 using namespace std;
 
@@ -128,7 +128,7 @@ void getKeySpace(const string& text, BITCRACK_PARAM* bc, Int& maxKey)
 			for (int i = 0; i < 32; i++)
 			{
 				unsigned char my1ch = 0;
-				sscanf(&item[2 * i], "%02hhX", &my1ch);
+				if (sscanf(&item[2 * i], "%02hhX", &my1ch)) {};
 				bc->ksStart.SetByte(31 - i, my1ch);
 			}
 		}
@@ -147,7 +147,7 @@ void getKeySpace(const string& text, BITCRACK_PARAM* bc, Int& maxKey)
 			for (int i = 0; i < 32; i++)
 			{
 				unsigned char my1ch = 0;
-				sscanf(&item[2 * i], "%02hhX", &my1ch);
+				if (sscanf(&item[2 * i], "%02hhX", &my1ch)) {};
 				bc->ksFinish.SetByte(31 - i, my1ch);
 			}
 
@@ -168,7 +168,7 @@ void getKeySpace(const string& text, BITCRACK_PARAM* bc, Int& maxKey)
 			for (int i = 0; i < 32; i++)
 			{
 				unsigned char my1ch = 0;
-				scanf(&item[2 * i], "%02hhX", &my1ch);
+				if (scanf(&item[2 * i], "%02hhX", &my1ch)) {};
 				bc->ksFinish.SetByte(31 - i, my1ch);
 			}
 		}
@@ -188,7 +188,7 @@ void checkKeySpace(BITCRACK_PARAM* bc, Int& maxKey)
 {
 	if (bc->ksStart.IsGreater(&maxKey) || bc->ksFinish.IsGreater(&maxKey))
 	{
-		fprintf(stderr, "[ERROR] START/END IsGreater %064s \n", maxKey.GetBase16().c_str());
+		fprintf(stderr, "[ERROR] START/END IsGreater %s \n", maxKey.GetBase16().c_str());
 		exit(-1);
 	}
 
@@ -307,7 +307,7 @@ void outputAdd(string outputFile, int addrType, string addr, string pAddr, strin
 		fprintf(f, "Priv (WIF): p2wpkh:%s\n", pAddr.c_str());
 		break;
 	}
-	fprintf(f, "Priv (HEX): 0x%064s\n", pAddrHex.c_str());
+	fprintf(f, "Priv (HEX): 0x%s\n", pAddrHex.c_str());
 
 	if (needToClose)
 		fclose(f);
@@ -566,7 +566,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	fprintf(stdout, "VanitySearch v" RELEASE "\n");
+	fprintf(stdout, "VanitySearch-Bitcrack v" RELEASE "\n");
 
 	if (gridSize.size() == 0) {
 		for (int i = 0; i < gpuId.size(); i++) {
