@@ -1,3 +1,4 @@
 # VanitySearch-bitcrack
 
-GPU only
+GPU only.
+Only one GPU per instance.
