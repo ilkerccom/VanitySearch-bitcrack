@@ -521,9 +521,9 @@ void VanitySearch::output(string addr, string pAddr, string pAddrHex, std::strin
 		}
 	}
 
-	fprintf(f, "PubAddress: %s\n", addr.c_str());
+	fprintf(f, "Public Addr: %s\n", addr.c_str());
 	fprintf(stdout, "=================================================================================\n");
-	fprintf(stdout, "PubAddress: %s\n", addr.c_str());
+	fprintf(stdout, "Public Addr: %s\n", addr.c_str());
 
 	switch (searchType) {
 	case P2PKH:
@@ -1125,7 +1125,7 @@ void VanitySearch::Search(std::vector<int> gpuId, std::vector<int> gridSize) {
 		avgKeyRate /= (double)(nbSample);		
 
 		if (isAlive(params)) {			
-			fprintf(stdout, "%.2f MK/s (2^%.2f) %s[%d]\n",
+			fprintf(stdout, "%.2f MK/s (2^%.2f) %s[%d]\r",
 				avgKeyRate / 1000000.0, log2((double)count),
 				GetExpectedTimeBitCrack(avgKeyRate, (double)count, bc).c_str(),
 				nbFoundKey);	
