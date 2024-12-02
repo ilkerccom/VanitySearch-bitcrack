@@ -60,7 +60,9 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="VanitySearch.exe" />
+    <None Include="VanitySearch.exe">
+      <DeploymentContent>false</DeploymentContent>
+    </None>
     <None Include="vs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
